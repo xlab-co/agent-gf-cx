@@ -1,0 +1,61 @@
+name = "agent-gfcx"
+main = "src/index.ts"
+compatibility_date = "2026-05-01"
+
+# ─── Cron Triggers ───────────────────────────────────────────────────────────
+# Twice daily, bracketing Apple's typical refurbished-inventory refresh window
+# (roughly 04:00–08:00 UTC). 05:00 UTC catches the early push; 09:00 UTC catches
+# anything added through mid-morning UTC. CF Worker cron is UTC-only — no DST
+# shift — so these times are stable year-round.
+# Validate cron strings at https://crontab.guru.
+[triggers]
+crons = ["0 5 * * *", "0 9 * * *"]
+
+# ─── KV Namespace ────────────────────────────────────────────────────────────
+# Run once to create:
+#   wrangler kv namespace create HISTORY
+# Then paste the returned id below.
+[[kv_namespaces]]
+binding = "HISTORY"
+id = "1fb0d1fd40ef497d847b90f3791e7fea"
+
+# ─── Custom domain ───────────────────────────────────────────────────────────
+# After deploying once, attach the canonical domain in the Cloudflare dashboard:
+#   Workers & Pages → agent-gfcx → Settings → Triggers → Add Custom Domain
+#   → agent.gf.cx
+# Then protect it via Zero Trust → Access → Applications → Self-hosted → agent.gf.cx
+# with a policy keyed to dan@gf.cx (One-time PIN / Google / passkey).
+#
+# agent.gf.cx is the umbrella for daily-dashboard agent modules.
+# Module #1: Mac mini M4 24GB/1TB price watcher (this worker).
+# Future modules live at agent.gf.cx/<module>/ — either as additional
+# routes in this worker or as siblings mounted at the same domain.
+
+# ─── Secrets (set via CLI, not in this file) ─────────────────────────────────
+# Each channel is independent; set the ones you want, skip the rest.
+#
+# Webhook (Zapier catch URL, ntfy.sh topic, Slack/Discord incoming hook):
+#   wrangler secret put WEBHOOK_URL
+#
+# Email via Resend (free: 100/day, 3000/month).
+# Requires domain verification at resend.com/domains (adds DKIM + return-path
+# DNS records — see CLAUDE.md). MailChannels' free Workers integration is
+# dead as of mid-2024 — don't use it.
+#   wrangler secret put RESEND_API_KEY     # Bearer token from resend.com dashboard
+#   wrangler secret put RESEND_FROM        # e.g. agent@gf.cx (must be verified domain)
+#   wrangler secret put RESEND_TO          # e.g. dan@gf.cx
+#
+# SMS via Twilio (paid, typically <$0.01/msg in the US).
+# Credentials live in 1Password — Code Shared vault:
+#   wrangler secret put TWILIO_ACCOUNT_SID
+#   wrangler secret put TWILIO_AUTH_TOKEN
+#   wrangler secret put TWILIO_FROM          # e.g. +12155551234 (your Twilio number)
+#   wrangler secret put TWILIO_TO            # e.g. +12155556789 (Dan's mobile)
+
+# ─── Observability ───────────────────────────────────────────────────────────
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1.0
