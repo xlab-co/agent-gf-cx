@@ -27,6 +27,7 @@
  */
 
 import { renderDashboard } from "./dashboard";
+import { renderHub } from "./hub";
 import { checkApple, type PriceResult } from "./sources";
 import { pickSmsProvider } from "./sms";
 
@@ -75,7 +76,16 @@ export default {
       return Response.json(result);
     }
 
+    // Hub — landing for the umbrella, one card per watch-list agent.
     if (url.pathname === "/" || url.pathname === "") {
+      const html = await renderHub(env);
+      return new Response(html, {
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+    }
+
+    // Mac mini detail — module #1. Old "/" linked here so we 301 trailing-slash variants.
+    if (url.pathname === "/mac-mini" || url.pathname === "/mac-mini/") {
       const history = await loadHistory(env);
       return new Response(renderDashboard(history, TARGET), {
         headers: { "content-type": "text/html; charset=utf-8" },
