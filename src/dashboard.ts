@@ -50,74 +50,88 @@ export function renderDashboard(history: HistoryEntry[], target: Target): string
        </div>`
     : "";
 
+  const allTimeLowBelow =
+    allTimeLow && (allTimeLow.cheapest!.price ?? Infinity) <= target.threshold;
+
   return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mac mini price watcher</title>
+<title>agent.gf.cx · Mac mini watcher</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://assets.gf.cx/cards/cards.css">
 <style>
   :root {
-    --bg: #f5f1e8;
-    --ink: #1a1a1a;
-    --muted: #6b6660;
-    --line: #d8d3c8;
-    --accent: #9F1C2E;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg: #1a1a1a; --ink: #e8e2d4; --muted: #8a857d; --line: #3a3530; --accent: #D9667A; }
+    --bg: #f7f3ec; --bg-warm: #ebe3d5;
+    --bg-card: rgba(255, 255, 255, 0.55);
+    --ink: #1a1816; --ink-soft: #5a544d; --accent: #2c4a3a;
+    --line: rgba(26, 24, 22, 0.12); --line-strong: rgba(26, 24, 22, 0.32);
+    --sans: 'Atkinson Hyperlegible', Verdana, Tahoma, -apple-system, BlinkMacSystemFont, sans-serif;
+    --serif: 'Newsreader', 'Times New Roman', Georgia, serif;
   }
   * { box-sizing: border-box; }
-  body { font: 15px/1.5 -apple-system, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--ink); margin: 0; padding: 40px 24px; }
-  .wrap { max-width: 760px; margin: 0 auto; }
-  h1 { font-size: 13px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
-  h2 { font-family: Newsreader, Georgia, serif; font-style: italic; font-weight: 400; font-size: 36px; margin: 0 0 40px; }
-  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 40px; padding: 24px; background: rgba(0,0,0,0.02); border-radius: 4px; }
-  @media (prefers-color-scheme: dark) { .stats { background: rgba(255,255,255,0.03); } }
-  .stat-label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
-  .stat-value { font-size: 24px; font-family: Newsreader, Georgia, serif; }
-  .stat-value .accent { color: var(--accent); }
-  .stat-sub { font-size: 12px; color: var(--muted); margin-top: 4px; font-family: Newsreader, Georgia, serif; font-style: italic; }
-  .chart { margin-bottom: 40px; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { text-align: left; font-weight: 500; color: var(--muted); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; padding: 12px 8px; border-bottom: 1px solid var(--line); }
+  body { background: var(--bg); color: var(--ink); font-family: var(--sans);
+         font-size: 17px; line-height: 1.55; -webkit-font-smoothing: antialiased; margin: 0; }
+  em { font-family: var(--serif); font-style: italic; color: var(--accent); font-weight: 400; }
+  a { color: inherit; text-decoration: underline; text-underline-offset: 3px;
+      text-decoration-color: var(--line-strong); }
+  a:hover { color: var(--accent); text-decoration-color: var(--accent); }
+  .page { max-width: 1100px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+  .kicker { font-size: 13px; letter-spacing: 1.4px; text-transform: uppercase;
+            font-weight: 700; color: var(--ink-soft); margin-bottom: 24px; }
+  .name { font-family: var(--serif); font-weight: 400; font-style: italic;
+          font-size: 44px; line-height: 1.05; letter-spacing: -0.5px; margin-bottom: 8px; }
+  .lede { font-size: 19px; color: var(--ink-soft); margin-bottom: 32px; max-width: 760px; }
+  .intro { background: var(--bg-card); border: 1px solid var(--line-strong); border-radius: 8px;
+           padding: 22px 26px; margin-bottom: 32px; font-size: 15.5px; line-height: 1.65; }
+  .intro p + p { margin-top: 10px; }
+  .intro code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13.5px;
+                padding: 1px 5px; background: rgba(0,0,0,0.04); border-radius: 3px; }
+  .accent { color: var(--accent); }
+  .chart { margin: 36px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; margin-top: 20px; }
+  th { text-align: left; font-weight: 700; color: var(--ink-soft); font-size: 12px;
+       letter-spacing: 1.2px; text-transform: uppercase; padding: 12px 8px;
+       border-bottom: 1px solid var(--line-strong); }
   td { padding: 12px 8px; border-bottom: 1px solid var(--line); }
   td.price { font-feature-settings: "tnum"; }
-  td.below { color: var(--accent); font-weight: 500; }
-  .empty { color: var(--muted); font-style: italic; padding: 24px; text-align: center; }
-  .intro { background: rgba(0,0,0,0.02); border-radius: 4px; padding: 24px 28px; margin-bottom: 32px; font-size: 14.5px; line-height: 1.65; }
-  .intro p + p { margin-top: 12px; }
-  .intro code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; padding: 1px 5px; background: rgba(0,0,0,0.04); border-radius: 3px; }
-  @media (prefers-color-scheme: dark) {
-    .intro { background: rgba(255,255,255,0.03); }
-    .intro code { background: rgba(255,255,255,0.06); }
-  }
-  a { color: var(--ink); }
-  footer { margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+  td.below { color: var(--accent); font-weight: 700; }
+  .empty { color: var(--ink-soft); font-style: italic; padding: 24px; text-align: center;
+           border: 1px dashed var(--line-strong); border-radius: 6px; }
+  .empty em { color: var(--accent); }
+  .foot { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--line);
+          font-size: 13px; letter-spacing: 0.5px; color: var(--ink-soft);
+          display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>agent.gf.cx · daily dashboards</h1>
-  <h2>Mac mini watcher</h2>
+
+<main class="page">
+
+  <div class="kicker">agent.gf.cx · daily dashboards</div>
+  <h1 class="name">Mac mini <em>watcher</em></h1>
+  <p class="lede">Apple Refurbished, checked twice daily — alerts when a Mac mini ${target.chip} ${target.ram}/${target.storage} drops to or below $${target.threshold.toFixed(0)}.</p>
 
   ${intro}
 
-  <div class="stats">
-    <div>
-      <div class="stat-label">Latest</div>
-      <div class="stat-value">${latest && latest.price !== null ? `$${latest.price.toFixed(2)}` : '—'}</div>
-      <div class="stat-sub">${latest ? latest.source : 'no priced result yet'}</div>
+  <div class="card-grid card-grid--narrow">
+    <div class="card card--stat">
+      <div class="card__label">Latest</div>
+      <div class="card__value">${latest && latest.price !== null ? `$${latest.price.toFixed(2)}` : '—'}</div>
+      <div class="card__sub">${latest ? latest.source : 'no priced result yet'}</div>
     </div>
-    <div>
-      <div class="stat-label">All-time low</div>
-      <div class="stat-value"><span class="${allTimeLow && (allTimeLow.cheapest!.price ?? Infinity) <= target.threshold ? 'accent' : ''}">${allTimeLow ? `$${allTimeLow.cheapest!.price!.toFixed(2)}` : '—'}</span></div>
-      <div class="stat-sub">${allTimeLow ? formatDate(allTimeLow.timestamp) : 'awaiting first run'}</div>
+    <div class="card card--stat">
+      <div class="card__label">All-time low</div>
+      <div class="card__value"><span class="${allTimeLowBelow ? 'accent' : ''}">${allTimeLow ? `$${allTimeLow.cheapest!.price!.toFixed(2)}` : '—'}</span></div>
+      <div class="card__sub">${allTimeLow ? formatDate(allTimeLow.timestamp) : 'awaiting first run'}</div>
     </div>
-    <div>
-      <div class="stat-label">Target</div>
-      <div class="stat-value">$${target.threshold.toFixed(2)}</div>
-      <div class="stat-sub">vs. $${target.retail.toFixed(2)} retail</div>
+    <div class="card card--stat">
+      <div class="card__label">Target</div>
+      <div class="card__value">$${target.threshold.toFixed(2)}</div>
+      <div class="card__sub">vs. $${target.retail.toFixed(2)} retail</div>
     </div>
   </div>
 
@@ -128,11 +142,13 @@ export function renderDashboard(history: HistoryEntry[], target: Target): string
     <tbody>${rows}</tbody>
   </table>
 
-  <footer>
-    Mac mini ${target.chip} ${target.ram}/${target.storage} · checked daily at 09:00 UTC<br>
-    Alerts fire when cheapest source drops to or below $${target.threshold.toFixed(2)}
+  <footer class="foot">
+    <span>Mac mini ${target.chip} ${target.ram}/${target.storage} · checked 05:00 + 09:00 UTC daily</span>
+    <span>Alerts ≤ $${target.threshold.toFixed(2)}</span>
   </footer>
-</div>
+
+</main>
+
 </body>
 </html>`;
 }
