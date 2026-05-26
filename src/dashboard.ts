@@ -92,13 +92,15 @@ export function renderDashboard(history: HistoryEntry[], target: Target): string
                 padding: 1px 5px; background: rgba(0,0,0,0.04); border-radius: 3px; }
   .accent { color: var(--accent); }
   .chart { margin: 36px 0; }
-  table { width: 100%; border-collapse: collapse; font-size: 15px; margin-top: 20px; }
-  th { text-align: left; font-weight: 700; color: var(--ink-soft); font-size: 12px;
-       letter-spacing: 1.2px; text-transform: uppercase; padding: 12px 8px;
-       border-bottom: 1px solid var(--line-strong); }
-  td { padding: 12px 8px; border-bottom: 1px solid var(--line); }
-  td.price { font-feature-settings: "tnum"; }
-  td.below { color: var(--accent); font-weight: 700; }
+  .ledger-heading { font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase;
+                    font-weight: 700; color: var(--ink-soft); margin: 28px 0 14px; }
+  .ledger .card--tile .card__count { font-feature-settings: "tnum"; }
+  .ledger .card--tile .card__title { font-family: var(--serif); font-style: italic;
+                                      font-size: 24px; line-height: 1.05; font-feature-settings: "tnum"; }
+  .ledger .card--tile .card__title.below { color: var(--accent); }
+  .ledger .card--tile .card__title.no-match { font-style: normal; font-size: 14px;
+                                               font-family: var(--sans); color: var(--ink-soft); }
+  .ledger .card--tile .card__meta a { text-decoration-color: var(--line); }
   .empty { color: var(--ink-soft); font-style: italic; padding: 24px; text-align: center;
            border: 1px dashed var(--line-strong); border-radius: 6px; }
   .empty em { color: var(--accent); }
@@ -137,10 +139,10 @@ export function renderDashboard(history: HistoryEntry[], target: Target): string
 
   ${chart}
 
-  <table>
-    <thead><tr><th>Date</th><th>Source</th><th style="text-align:right">Price</th></tr></thead>
-    <tbody>${rows}</tbody>
-  </table>
+  <div class="ledger-heading">Recent checks · last 30</div>
+  <div class="card-grid card-grid--narrow ledger">
+    ${rows}
+  </div>
 
   <footer class="foot">
     <span>Mac mini ${target.chip} ${target.ram}/${target.storage} · checked 05:00 + 09:00 UTC daily</span>
@@ -211,17 +213,25 @@ function renderChart(priced: HistoryEntry[], target: Target): string {
 
 function renderRows(entries: HistoryEntry[]): string {
   if (!entries.length) {
-    return `<tr><td colspan="3" class="empty">No runs yet. The first cron fire at 09:00 UTC will populate this.</td></tr>`;
+    return `<div class="empty" style="grid-column: 1 / -1">No runs yet. The first cron fire at 09:00 UTC will populate this.</div>`;
   }
   return entries
     .map((e) => {
       const date = formatDate(e.timestamp);
       const cheap = e.cheapest;
       if (!cheap || cheap.price === null) {
-        return `<tr><td>${date}</td><td colspan="2" style="color:var(--muted);font-style:italic">no priced match</td></tr>`;
+        return `<div class="card card--tile card--placeholder">
+          <p class="card__count">${date}</p>
+          <p class="card__title no-match">no priced match</p>
+          <p class="card__meta">&mdash;</p>
+        </div>`;
       }
-      const below = cheap.price <= 1099 ? "below" : "";
-      return `<tr><td>${date}</td><td><a href="${cheap.url}">${escapeHtml(cheap.source)}</a></td><td class="price ${below}" style="text-align:right">$${cheap.price.toFixed(2)}</td></tr>`;
+      const belowClass = cheap.price <= 1099 ? " below" : "";
+      return `<div class="card card--tile">
+        <p class="card__count">${date}</p>
+        <p class="card__title${belowClass}">$${cheap.price.toFixed(2)}</p>
+        <p class="card__meta"><a href="${cheap.url}">${escapeHtml(cheap.source)}</a></p>
+      </div>`;
     })
     .join("");
 }
