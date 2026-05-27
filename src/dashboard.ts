@@ -18,6 +18,18 @@ interface Target {
   threshold: number;
 }
 
+// Apple Direct buy-now link for the watched config (M4 24GB/1TB, SKU
+// MCYT4LL/A). Carries our affid for click attribution. Update if Apple
+// rotates the SKU or campaign codes. Pickup-note is time-sensitive
+// (varies by zip + stock); keep as a captured-at-link-add hint, not
+// a live truth.
+const RETAIL_BUY_LINK =
+  "https://www.apple.com/shop/buy-mac/mac-mini/m4-chip-10-core-cpu-10-core-gpu-24gb-memory-1tb-storage" +
+  "?afid=p240%7Cbi~cmp-698273627~adg-1243549019723441~ad-77721948949861_pla-2329521542558113" +
+  "~dev-c~ext-~prd-MCYT4LL%2FA~nt-search~crid-2329521542558113" +
+  "&cid=aos-us-kwbi-pmax-mac---product-MCYT4LL%2FA";
+const RETAIL_PICKUP_NOTE = "in-stock · pickup Wed Aug 26 (link-add 26 May 2026)";
+
 export function renderDashboard(history: HistoryEntry[], target: Target): string {
   const priced = history.filter(
     (h) => h.cheapest && h.cheapest.price !== null,
@@ -119,6 +131,34 @@ export function renderDashboard(history: HistoryEntry[], target: Target): string
     .verdict__context .sep { margin: 0 6px; }
   }
 
+  /* Retail anchor — "what costs today, now, at Apple Direct." Sits
+     under the verdict so the refurb result has its baseline-of-truth
+     on the same screen. Tappable, prefetchy hover, but quieter than
+     the verdict price itself. */
+  .retail-cta { display: inline-flex; align-items: baseline; gap: 12px;
+                margin: -8px auto 32px; padding: 12px 18px;
+                background: var(--bg-card); border: 1px solid var(--line-strong);
+                border-radius: 8px; text-decoration: none; color: var(--ink);
+                font-size: 15px; transition: border-color .15s, background .15s; }
+  .retail-cta:hover { border-color: var(--accent);
+                      background: rgba(255, 255, 255, 0.85);
+                      color: var(--accent); text-decoration: none; }
+  .retail-cta__label { font-size: 11px; letter-spacing: 1.1px;
+                       text-transform: uppercase; font-weight: 700;
+                       color: var(--ink-soft); }
+  .retail-cta:hover .retail-cta__label { color: var(--accent); }
+  .retail-cta__price { font-family: var(--serif); font-style: italic;
+                       font-size: 22px; line-height: 1;
+                       font-feature-settings: "tnum"; }
+  .retail-cta__sub { font-size: 12px; color: var(--ink-soft);
+                     letter-spacing: 0.3px; }
+  .retail-cta__wrap { display: flex; justify-content: center;
+                      margin: -8px 0 32px; }
+  @media (max-width: 500px) {
+    .retail-cta { flex-wrap: wrap; gap: 4px 12px; }
+    .retail-cta__sub { flex-basis: 100%; }
+  }
+
   .chart { margin: 36px 0; }
   .ledger-heading { font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase;
                     font-weight: 700; color: var(--ink-soft); margin: 28px 0 14px; }
@@ -148,6 +188,14 @@ export function renderDashboard(history: HistoryEntry[], target: Target): string
   ${intro}
 
   ${renderVerdict(latest, allTimeLow, target)}
+
+  <div class="retail-cta__wrap">
+    <a class="retail-cta" href="${RETAIL_BUY_LINK}" target="_blank" rel="noopener">
+      <span class="retail-cta__label">Buy retail now</span>
+      <span class="retail-cta__price">$${target.retail.toFixed(0)}</span>
+      <span class="retail-cta__sub">Apple Direct · ${RETAIL_PICKUP_NOTE}</span>
+    </a>
+  </div>
 
   ${chart}
 
