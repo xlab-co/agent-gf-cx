@@ -50,9 +50,6 @@ export function renderDashboard(history: HistoryEntry[], target: Target): string
        </div>`
     : "";
 
-  const allTimeLowBelow =
-    allTimeLow && (allTimeLow.cheapest!.price ?? Infinity) <= target.threshold;
-
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -91,6 +88,37 @@ export function renderDashboard(history: HistoryEntry[], target: Target): string
   .intro code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13.5px;
                 padding: 1px 5px; background: rgba(0,0,0,0.04); border-radius: 3px; }
   .accent { color: var(--accent); }
+
+  /* Verdict-first hierarchy — the single number is the page. */
+  .verdict { margin: 56px 0 40px; text-align: center; }
+  .verdict__price { font-family: var(--serif); font-weight: 500; font-size: 96px;
+                    line-height: 1; letter-spacing: -2px; color: var(--ink);
+                    font-feature-settings: "tnum"; font-style: normal; }
+  .verdict__price.is-below { color: var(--accent); }
+  .verdict__waiting { font-family: var(--serif); font-style: italic;
+                      font-weight: 400; font-size: 48px; line-height: 1.1;
+                      letter-spacing: -0.5px; color: var(--ink-soft); }
+  .verdict__delta { margin-top: 18px; font-size: 17px; color: var(--ink-soft);
+                    letter-spacing: 0.2px; }
+  .verdict__delta.is-below { color: var(--accent); font-weight: 700;
+                             letter-spacing: 1.2px; text-transform: uppercase; font-size: 14px; }
+  .verdict__delta.is-empty { font-family: var(--serif); font-style: italic; font-size: 18px; }
+  .verdict__rule { border: 0; border-top: 1px solid var(--line-strong);
+                   width: 56px; margin: 28px auto; opacity: 0.6; }
+  .verdict__context { font-size: 14px; color: var(--ink-soft);
+                      letter-spacing: 0.3px; }
+  .verdict__context strong { color: var(--ink); font-weight: 700;
+                             font-feature-settings: "tnum"; margin-left: 4px; }
+  .verdict__context .sep { margin: 0 12px; color: var(--line-strong); }
+  .verdict__context .accent strong { color: var(--accent); }
+
+  @media (max-width: 600px) {
+    .verdict__price { font-size: 64px; letter-spacing: -1px; }
+    .verdict__waiting { font-size: 34px; }
+    .verdict__context { font-size: 13px; }
+    .verdict__context .sep { margin: 0 6px; }
+  }
+
   .chart { margin: 36px 0; }
   .ledger-heading { font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase;
                     font-weight: 700; color: var(--ink-soft); margin: 28px 0 14px; }
@@ -119,23 +147,7 @@ export function renderDashboard(history: HistoryEntry[], target: Target): string
 
   ${intro}
 
-  <div class="card-grid card-grid--narrow">
-    <div class="card card--stat">
-      <div class="card__label">Latest</div>
-      <div class="card__value">${latest && latest.price !== null ? `$${latest.price.toFixed(2)}` : '—'}</div>
-      <div class="card__sub">${latest ? latest.source : 'no priced result yet'}</div>
-    </div>
-    <div class="card card--stat">
-      <div class="card__label">All-time low</div>
-      <div class="card__value"><span class="${allTimeLowBelow ? 'accent' : ''}">${allTimeLow ? `$${allTimeLow.cheapest!.price!.toFixed(2)}` : '—'}</span></div>
-      <div class="card__sub">${allTimeLow ? formatDate(allTimeLow.timestamp) : 'awaiting first run'}</div>
-    </div>
-    <div class="card card--stat">
-      <div class="card__label">Target</div>
-      <div class="card__value">$${target.threshold.toFixed(2)}</div>
-      <div class="card__sub">vs. $${target.retail.toFixed(2)} retail</div>
-    </div>
-  </div>
+  ${renderVerdict(latest, allTimeLow, target)}
 
   ${chart}
 
@@ -153,6 +165,65 @@ export function renderDashboard(history: HistoryEntry[], target: Target): string
 
 </body>
 </html>`;
+}
+
+function renderVerdict(
+  latest: HistoryEntry["cheapest"] | null,
+  allTimeLow: HistoryEntry | null,
+  target: Target,
+): string {
+  const fmt2 = (n: number) =>
+    n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmt0 = (n: number) =>
+    n.toLocaleString("en-US", { maximumFractionDigits: 0 });
+
+  const price = latest && latest.price !== null ? latest.price : null;
+  const lowPrice =
+    allTimeLow && allTimeLow.cheapest && allTimeLow.cheapest.price !== null
+      ? allTimeLow.cheapest.price
+      : null;
+
+  // The hero number + the delta line.
+  let priceHtml: string;
+  let deltaHtml: string;
+
+  if (price === null) {
+    // Empty state: skip the dash entirely (em-dash glyph is just a horizontal
+    // line and dies at any font-size). Make the message itself the hero.
+    priceHtml = `<div class="verdict__waiting">first check pending</div>`;
+    deltaHtml = "";
+  } else if (price <= target.threshold) {
+    const under = fmt0(target.threshold - price);
+    priceHtml = `<div class="verdict__price is-below">$${fmt2(price)}</div>`;
+    deltaHtml =
+      price === target.threshold
+        ? `<div class="verdict__delta is-below">at target</div>`
+        : `<div class="verdict__delta is-below">↓ $${under} below target</div>`;
+  } else {
+    const over = fmt0(price - target.threshold);
+    priceHtml = `<div class="verdict__price">$${fmt2(price)}</div>`;
+    deltaHtml = `<div class="verdict__delta">↑ $${over} above target</div>`;
+  }
+
+  // Context strip: target · retail · all-time low
+  const lowBelow = lowPrice !== null && lowPrice <= target.threshold;
+  const lowFragment =
+    lowPrice !== null
+      ? `<span${lowBelow ? ' class="accent"' : ""}>all-time low<strong>$${fmt0(lowPrice)}</strong></span>`
+      : `<span>all-time low<strong>—</strong></span>`;
+
+  return `<section class="verdict" aria-label="Current verdict">
+    ${priceHtml}
+    ${deltaHtml}
+    <hr class="verdict__rule">
+    <div class="verdict__context">
+      <span>target<strong>$${fmt0(target.threshold)}</strong></span>
+      <span class="sep">·</span>
+      <span>retail<strong>$${fmt0(target.retail)}</strong></span>
+      <span class="sep">·</span>
+      ${lowFragment}
+    </div>
+  </section>`;
 }
 
 function renderChart(priced: HistoryEntry[], target: Target): string {
