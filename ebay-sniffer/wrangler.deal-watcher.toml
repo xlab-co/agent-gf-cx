@@ -1,0 +1,15 @@
+name = "deal-watcher"
+main = "deal-watcher.js"
+compatibility_date = "2025-06-01"
+
+# Run every 30 minutes. eBay API has generous limits; tighten if you add sources.
+[triggers]
+crons = ["*/30 * * * *"]
+
+[[kv_namespaces]]
+binding = "DEALS"
+id = "REPLACE_WITH_KV_ID"   # wrangler kv namespace create DEALS
+
+# Keep console output flowing on deploy (dashboard toggle alone gets overwritten).
+[observability]
+enabled = true

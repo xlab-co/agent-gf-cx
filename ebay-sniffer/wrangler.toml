@@ -1,0 +1,34 @@
+name = "ebay-sniffer"
+main = "worker.js"
+compatibility_date = "2025-06-01"
+
+# Public route on the open-access host io.gf.cx (NOT Access-gated). Longest-match
+# wins, so this catches /agent/ebay/* while io.gf.cx root keeps its own service.
+routes = [
+  # No-slash bare path AND everything under it. The bare-path route is needed
+  # because `/agent/ebay/*` does NOT match `/agent/ebay` (no trailing slash) —
+  # without it the bare path falls through to the io.gf.cx root surface (404).
+  { pattern = "io.gf.cx/agent/ebay", zone_name = "gf.cx" },
+  { pattern = "io.gf.cx/agent/ebay/*", zone_name = "gf.cx" },
+]
+
+# Phase 1 (LIVE 2026-06-14): public eBay account-deletion compliance endpoint.
+# MUST stay OUTSIDE CF Access — eBay's webhook is unauthenticated, so this is a
+# standalone Worker on its own host (NOT a route under Access-gated agent.gf.cx).
+# A custom domain gets bound after the workers.dev handshake is verified.
+#
+# Phase 2 (tomorrow): add [triggers] crons + [[kv_namespaces]] DEALS and fold in
+# the deal-watcher (see deal-watcher.js / wrangler.deal-watcher.toml) once the
+# eBay PRODUCTION keyset is issued.
+
+# Phase 2 (the agent): scan eBay every 30 min.
+[triggers]
+crons = ["*/30 * * * *"]
+
+# Dedup + token cache + recent-hits ledger + status card.
+[[kv_namespaces]]
+binding = "DEALS"
+id = "675e09053dcf47b19e4893e24c2c9a36"
+
+[observability]
+enabled = true

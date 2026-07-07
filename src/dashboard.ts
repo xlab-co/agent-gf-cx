@@ -68,6 +68,14 @@ export function renderDashboard(history: HistoryEntry[], target: Target): string
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>agent.gf.cx · Mac mini watcher</title>
+<meta property="og:title" content="agent.gf.cx">
+<meta property="og:description" content="Autonomous-agent watch list · gf.cx portfolio">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://media.gf.cx/agent.gf.cx/og/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://media.gf.cx/agent.gf.cx/og/card.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..600&display=swap" rel="stylesheet">
