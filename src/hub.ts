@@ -53,14 +53,6 @@ export async function renderHub(env: Env): Promise<string> {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://assets.gf.cx/cards/cards.css">
-<!-- almanac convergence layer -->
-<link rel="stylesheet" href="https://assets.gf.cx/masthead/masthead.css">
-<style>html,body{overflow-x:clip;}</style>
-<link rel="stylesheet" href="https://assets.gf.cx/almanac/almanac.css">
-<!-- Portfolio favicon · assets.gf.cx (managed · gfcx_favicon.py) -->
-<link rel="icon" href="https://assets.gf.cx/icons/favicon/ziiiro-celeste-watch-favicon.ico" sizes="any">
-<link rel="icon" type="image/png" sizes="32x32" href="https://assets.gf.cx/icons/favicon/ziiiro-celeste-watch-32.png">
-<link rel="apple-touch-icon" href="https://assets.gf.cx/icons/favicon/ziiiro-celeste-watch-180.png">
 <style>
   :root {
     --bg: #f7f3ec; --bg-warm: #ebe3d5;
@@ -149,14 +141,10 @@ export async function renderHub(env: Env): Promise<string> {
 </head>
 <body>
 
-<header class="masthead masthead--warm masthead--solid" style="--mh-measure:1100px">
-  <div class="masthead__inner">
-    <div class="masthead__kicker"><span>agent.gf.cx</span><span class="where">daily-cadence watch list</span></div>
-    <h1 class="masthead__title"><em>Watch</em> list</h1>
-  </div>
-</header>
-
 <main class="page">
+
+  <div class="kicker">agent.gf.cx · daily-cadence watch list</div>
+  <h1 class="name"><em>Watch</em> list</h1>
   <p class="lede">Autonomous agents that watch the world while you sleep — each card is a thesis on a speculative opportunity (a deal, a fare, a listing) being checked once a day. When a thesis crosses its threshold, the agent pings.</p>
   <p class="meta"><strong>${liveCount}</strong> live · <strong>${plannedCount}</strong> planned · checked daily at 05:00 + 09:00 UTC</p>
 
@@ -169,11 +157,7 @@ export async function renderHub(env: Env): Promise<string> {
     <span>Add a module → src/modules.ts</span>
   </footer>
 
-  <div data-made-with data-repo="xlab-co/agent-gf-cx" data-surface="agent.gf.cx" data-project="agent-gf-cx"></div>
-
 </main>
-
-<script src="https://assets.gf.cx/made-with/made-with.js" defer></script>
 
 </body>
 </html>`;
