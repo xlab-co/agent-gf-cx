@@ -1,0 +1,78 @@
+name: Deploy agent.gf.cx Worker to Cloudflare
+
+# Push-to-main keyless deploy for the agent.gf.cx Worker (agent-gfcx).
+#   repo root -> agent-gf-cx  (serves agent.gf.cx; main=src/index.ts, KV HISTORY,
+#   cron triggers). Pushing to main now ships; "pushed" and "live" become the
+#   same state.
+#
+# ── AUTH: Track A — token-free keyless, no CF credential stored in GitHub ──
+# Cloned from xlab-nyc/sandbox-gf-cx / dare-co-uk (the proven Workers-keyless
+# precedent). agent is a REAL Worker (main=src/index.ts), so deploy needs a
+# token scoped `Account · Workers Scripts · Edit` — the Pages fleet's Pages:Edit
+# token cannot deploy a Worker.
+#
+#   GitHub OIDC -> GCP Workload Identity Federation -> workers-deploy@xlab-co SA
+#   -> reads SM secret xlab-co/cf-workers-deploy-token (Workers Scripts:Edit)
+#   -> wrangler deploy.
+#
+# Shares the SAME Cloudflare account as dogwood/dare/sandbox
+# (2366f43fb08cc98065551599ad8e6e63), so cf-workers-deploy-token already covers
+# it — no new token or Secret Manager secret. Enrolled in both WIF gates via:
+#   gfcx_keyless_onboard.py xlab-co/agent-gf-cx \
+#       --sa workers-deploy@xlab-co.iam.gserviceaccount.com --apply
+#
+# NOTE: agent.gf.cx's custom domain is attached OUT OF BAND (CF dashboard) — this
+# config declares NO routes block, so `wrangler deploy` never touches zone routes
+# (the scoped token has no zone Workers-Routes permission). KV + cron triggers are
+# script-level and set by Workers Scripts:Edit. No assets bundle -> no node_modules
+# gotcha.
+#
+# Break-glass manual deploy (Dan's Mac, OAuth — no token):  npx wrangler deploy
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.py'
+      - 'AGENTS.md'
+      - 'CLAUDE.md'
+      - 'README.md'
+      - 'docs/**'
+      - 'tests/**'
+      - '*.bak-*'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  id-token: write   # Track A (keyless): lets the runner mint the OIDC JWT for WIF
+
+concurrency:
+  group: agent-gf-cx-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP via Workload Identity Federation
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/605125720459/locations/global/workloadIdentityPools/github-actions/providers/github
+          service_account: workers-deploy@xlab-co.iam.gserviceaccount.com
+      - name: Read CF Workers token from Secret Manager
+        uses: google-github-actions/get-secretmanager-secrets@v2
+        with:
+          export_to_environment: true
+          secrets: |-
+            CLOUDFLARE_API_TOKEN:xlab-co/cf-workers-deploy-token
+
+      - name: Deploy agent-gfcx
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ env.CLOUDFLARE_API_TOKEN }}
+          accountId: "2366f43fb08cc98065551599ad8e6e63"
+          wranglerVersion: "4.99.0"
+          command: deploy
